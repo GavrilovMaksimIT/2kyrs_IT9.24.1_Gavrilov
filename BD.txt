@@ -1,0 +1,42 @@
+create role rl_customer with password '12345';
+alter role rl_customer LOGIN;
+grant connect on database "Music_Store_db" to rl_customer
+
+create role rl_sales_manager with password '12345';
+alter role rl_sales_manager LOGIN;
+grant connect on database "Music_Store_db" to rl_sales_manager ;
+
+create role rl_supply_manager with password '12345';
+alter role rl_supply_manager LOGIN;
+grant connect on database "Music_Store_db" to rl_supply_manager;
+
+create role rl_cashier with password '12345';
+alter role rl_cashier LOGIN;
+grant connect on database "Music_Store_db" to rl_cashier;
+create role rl_administrator with password '12345';
+alter role rl_administrator LOGIN;
+grant connect on database "Music_Store_db" to rl_administrator;
+
+create role rl_supplier with password '12345';
+alter role rl_supplier LOGIN;
+grant connect on database "Music_Store_db" to rl_supplier;
+
+create role rl_customer with password '12345';
+alter role rl_customer LOGIN;
+grant connect on database "Music_Store_db" to rl_customer
+
+
+
+SELECT datname FROM pg_catalog.pg_database
+where datname = 'Music_Store_db';
+
+SELECT datname FROM pg_catalog.pg_database
+where datname = 'Music_Store_db';
+
+SELECT datname FROM pg_catalog.pg_database
+where datname = 'Music_Store_db';
+SELECT datname FROM pg_catalog.pg_database
+where datname = 'Music_Store_db';
+
+SELECT datname FROM pg_catalog.pg_database
+where datname = 'Music_Store_db';
