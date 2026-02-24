@@ -1,0 +1,436 @@
+Заполняем файл 
+create or replace procedure Structure_Create()
+language plpgsql
+as $$
+begin
+    create table if not exists pokupatelya (
+        id_pokupatelya int not null constraint PK_pokupatelya primary key,
+        login_pokupatelya varchar(50) not null,
+        familiya_pokupatelya varchar(100) not null,
+        imya_pokupatelya varchar(100) not null,
+        otchestvo_pokupatelya varchar(100),
+        seriya_pasporta varchar(4),
+        nomer_pasporta varchar(6),
+        gorod varchar(100),
+        ulitsa varchar(200),
+        telefon varchar(20),
+        bankovskaya_karta varchar(19)
+    );
+    
+    create index if not exists idx_pokupatelya_login on pokupatelya(login_pokupatelya);
+    create index if not exists idx_pokupatelya_fio on pokupatelya(familiya_pokupatelya, imya_pokupatelya, otchestvo_pokupatelya);
+    create table if not exists sotrudnika (
+        id_sotrudnika int not null constraint PK_sotrudnika primary key,
+        sotrudnika varchar(50) not null,
+        familiya_sotrudnika varchar(100) not null,
+        imya_sotrudnika varchar(100) not null,
+        otchestvo_sotrudnika varchar(100),
+        parol varchar(100) not null
+    );
+    
+    create index if not exists idx_sotrudnika_fio on sotrudnika(familiya_sotrudnika, imya_sotrudnika, otchestvo_sotrudnika);
+
+    create table if not exists postavshika (
+        id_postavshika int not null constraint PK_postavshika primary key,
+        nomer_smetry varchar(12) not null,
+        data_vremya_sozdaniya datetime not null,
+        status varchar(50) not null
+    );
+    
+    create index if not exists idx_postavshika_nomer on postavshika(nomer_smetry);
+    create index if not exists idx_postavshika_data on postavshika(data_vremya_sozdaniya);
+
+    create table if not exists zakaza (
+        id_zakaza int not null constraint PK_zakaza primary key,
+        zakaza varchar(20) not null,
+        nomer_zakaza varchar(20) not null,
+        nomer_cheka varchar(20),
+        status varchar(50),
+        id_pokupatelya int not null constraint FK_zakaza_pokupatelya references pokupatelya(id_pokupatelya),
+        itogovaya_stoimost decimal(10,2)
+    );
+    
+    create index if not exists idx_zakaza_nomer on zakaza(nomer_zakaza);
+    create index if not exists idx_zakaza_pokupatel on zakaza(id_pokupatelya);
+
+    create table if not exists smeta (
+        id_smeta int not null constraint PK_smeta primary key,
+        smeta varchar(12) not null,
+        nomer_smetry varchar(12) not null,
+        data_vremya datetime not null,
+        status varchar(50) not null,
+        id_postavshika int not null constraint FK_smeta_postavshika references postavshika(id_postavshika)
+    );
+    
+    create index if not exists idx_smeta_nomer on smeta(nomer_smetry);
+    create index if not exists idx_smeta_postavshik on smeta(id_postavshika);
+
+    create table if not exists position_smeta (
+        id_position_smeta int not null constraint PK_position_smeta primary key,
+        kolichestvo integer not null,
+        stoimost_pozitsii decimal(10,2) not null,
+        smeta varchar(12) not null,
+        id_smeta int not null constraint FK_position_smeta_smeta references smeta(id_smeta),
+        instrument varchar(12) not null
+    );
+    
+    create index if not exists idx_position_smeta_smeta on position_smeta(id_smeta);
+
+    create table if not exists chek_zakaza (
+        id_chek_zakaza int not null constraint PK_chek_zakaza primary key,
+        nomer_cheka varchar(20) not null,
+        data_vremya datetime not null,
+        summa decimal(10,2) not null,
+        id_sotrudnika int not null constraint FK_chek_zakaza_sotrudnik references sotrudnika(id_sotrudnika),
+        id_zakaza int not null constraint FK_chek_zakaza_zakaz references zakaza(id_zakaza)
+    );
+    
+    create index if not exists idx_chek_zakaza_nomer on chek_zakaza(nomer_cheka);
+    create index if not exists idx_chek_zakaza_zakaz on chek_zakaza(id_zakaza);
+    create index if not exists idx_chek_zakaza_sotrudnik on chek_zakaza(id_sotrudnika);
+
+    create table if not exists cheka_smeta (
+        id_cheka_smeta int not null constraint PK_cheka_smeta primary key,
+        nomer_cheka varchar(20) not null,
+        data_vremya datetime not null,
+        summa decimal(10,2) not null,
+        id_sotrudnika int not null constraint FK_cheka_smeta_sotrudnik references sotrudnika(id_sotrudnika),
+        id_smeta int not null constraint FK_cheka_smeta_smeta references smeta(id_smeta)
+    );
+    
+    create index if not exists idx_cheka_smeta_nomer on cheka_smeta(nomer_cheka);
+    create index if not exists idx_cheka_smeta_smeta on cheka_smeta(id_smeta);
+
+    create table if not exists postavka (
+        id_postavka int not null constraint PK_postavka primary key,
+        postavka varchar(20) not null,
+        nomer_cheka varchar(20) not null,
+        itogo_summa decimal(10,2) not null,
+        vnes_summa decimal(10,2) not null,
+        data_vremya datetime not null,
+        id_sotrudnika int not null constraint FK_postavka_sotrudnik references sotrudnika(id_sotrudnika),
+        id_smeta int not null constraint FK_postavka_smeta references smeta(id_smeta)
+    );
+    
+    create index if not exists idx_postavka_nomer_cheka on postavka(nomer_cheka);
+    create index if not exists idx_postavka_smeta on postavka(id_smeta);
+
+    create table if not exists Instrument (
+        id_instrument int not null constraint PK_instrument primary key,
+        artikul varchar(12) not null,
+        vid_instrumenta varchar(50) not null,
+        strana_proizvoditel varchar(50),
+        marka_model varchar(100),
+        diapazon_chastot varchar(100),
+        material text,
+        kolichestvo integer not null,
+        cena decimal(10,2) not null,
+        id_position_smeta int constraint FK_instrument_position references position_smeta(id_position_smeta),
+        id_zakaza int constraint FK_instrument_zakaz references zakaza(id_zakaza)
+    );
+    
+    create index if not exists idx_instrument_artikul on Instrument(artikul);
+    create index if not exists idx_instrument_vid on Instrument(vid_instrumenta);
+    
+end;
+$$;
+
+create or replace procedure Structure_Re_Create()
+language plpgsql
+as $$
+begin
+
+    drop table if exists Instrument cascade;
+    drop table if exists postavka cascade;
+    drop table if exists cheka_smeta cascade;
+    drop table if exists chek_zakaza cascade;
+    drop table if exists position_smeta cascade;
+    drop table if exists smeta cascade;
+    drop table if exists zakaza cascade;
+    drop table if exists postavshika cascade;
+    drop table if exists sotrudnika cascade;
+    drop table if exists pokupatelya cascade;
+
+    drop index if exists idx_pokupatelya_login;
+    drop index if exists idx_pokupatelya_fio;
+    drop index if exists idx_sotrudnika_fio;
+    drop index if exists idx_postavshika_nomer;
+    drop index if exists idx_postavshika_data;
+    drop index if exists idx_zakaza_nomer;
+    drop index if exists idx_zakaza_pokupatel;
+    drop index if exists idx_smeta_nomer;
+    drop index if exists idx_smeta_postavshik;
+    drop index if exists idx_position_smeta_smeta;
+    drop index if exists idx_chek_zakaza_nomer;
+    drop index if exists idx_chek_zakaza_zakaz;
+    drop index if exists idx_chek_zakaza_sotrudnik;
+    drop index if exists idx_cheka_smeta_nomer;
+    drop index if exists idx_cheka_smeta_smeta;
+    drop index if exists idx_postavka_nomer_cheka;
+    drop index if exists idx_postavka_smeta;
+    drop index if exists idx_instrument_artikul;
+    drop index if exists idx_instrument_vid;
+    call Structure_Create();
+    
+end;
+$$;
+
+create or replace procedure Structure_Create()
+language plpgsql
+as $$
+begin
+
+    create table if not exists pokupatelya (
+        id_pokupatelya int not null constraint PK_pokupatelya primary key,
+        login_pokupatelya varchar(50) not null,
+        familiya_pokupatelya varchar(100) not null,
+        imya_pokupatelya varchar(100) not null,
+        otchestvo_pokupatelya varchar(100),
+        seriya_pasporta varchar(4),
+        nomer_pasporta varchar(6),
+        gorod varchar(100),
+        ulitsa varchar(200),
+        telefon varchar(20),
+        bankovskaya_karta varchar(19)
+    );
+    create index if not exists idx_pokupatelya_id on pokupatelya(id_pokupatelya);
+    create index if not exists idx_pokupatelya_login on pokupatelya(login_pokupatelya);
+    create index if not exists idx_pokupatelya_fio on pokupatelya(familiya_pokupatelya, imya_pokupatelya, otchestvo_pokupatelya);
+ 
+    create table if not exists sotrudnika (
+        id_sotrudnika int not null constraint PK_sotrudnika primary key,
+        sotrudnika varchar(50) not null,
+        familiya_sotrudnika varchar(100) not null,
+        imya_sotrudnika varchar(100) not null,
+        otchestvo_sotrudnika varchar(100),
+        parol varchar(100) not null
+    );
+    create index if not exists idx_sotrudnika_id on sotrudnika(id_sotrudnika);
+    create index if not exists idx_sotrudnika_fio on sotrudnika(familiya_sotrudnika, imya_sotrudnika, otchestvo_sotrudnika);
+
+    create table if not exists postavshika (
+        id_postavshika int not null constraint PK_postavshika primary key,
+        nomer_smetry varchar(12) not null,
+        data_vremya_sozdaniya timestamp not null,
+        status varchar(50) not null
+    );
+    create index if not exists idx_postavshika_id on postavshika(id_postavshika);
+    create index if not exists idx_postavshika_nomer on postavshika(nomer_smetry);
+
+    create table if not exists zakaza (
+        id_zakaza int not null constraint PK_zakaza primary key,
+        zakaza varchar(20) not null,
+        nomer_zakaza varchar(20) not null,
+        nomer_cheka varchar(20),
+        status varchar(50),
+        id_pokupatelya int not null constraint FK_zakaza_pokupatelya references pokupatelya(id_pokupatelya),
+        itogovaya_stoimost decimal(10,2)
+    );
+    create index if not exists idx_zakaza_id on zakaza(id_zakaza);
+    create index if not exists idx_zakaza_nomer on zakaza(nomer_zakaza);
+
+    create table if not exists smeta (
+        id_smeta int not null constraint PK_smeta primary key,
+        smeta varchar(12) not null,
+        nomer_smetry varchar(12) not null,
+        data_vremya timestamp not null,
+        status varchar(50) not null,
+        id_postavshika int not null constraint FK_smeta_postavshika references postavshika(id_postavshika)
+    );
+    create index if not exists idx_smeta_id on smeta(id_smeta);
+    create index if not exists idx_smeta_nomer on smeta(nomer_smetry);
+
+    create table if not exists position_smeta (
+        id_position_smeta int not null constraint PK_position_smeta primary key,
+        kolichestvo integer not null,
+        stoimost_pozitsii decimal(10,2) not null,
+        smeta varchar(12) not null,
+        id_smeta int not null constraint FK_position_smeta_smeta references smeta(id_smeta),
+        instrument varchar(12) not null
+    );
+    create index if not exists idx_position_smeta_id on position_smeta(id_position_smeta);
+
+    create table if not exists chek_zakaza (
+        id_chek_zakaza int not null constraint PK_chek_zakaza primary key,
+        nomer_cheka varchar(20) not null,
+        data_vremya timestamp not null,
+        summa decimal(10,2) not null,
+        id_sotrudnika int not null constraint FK_chek_zakaza_sotrudnik references sotrudnika(id_sotrudnika),
+        id_zakaza int not null constraint FK_chek_zakaza_zakaz references zakaza(id_zakaza)
+    );
+    create index if not exists idx_chek_zakaza_id on chek_zakaza(id_chek_zakaza);
+    create index if not exists idx_chek_zakaza_nomer on chek_zakaza(nomer_cheka);
+
+    create table if not exists cheka_smeta (
+        id_cheka_smeta int not null constraint PK_cheka_smeta primary key,
+        nomer_cheka varchar(20) not null,
+        data_vremya timestamp not null,
+        summa decimal(10,2) not null,
+        id_sotrudnika int not null constraint FK_cheka_smeta_sotrudnik references sotrudnika(id_sotrudnika),
+        id_smeta int not null constraint FK_cheka_smeta_smeta references smeta(id_smeta)
+    );
+    create index if not exists idx_cheka_smeta_id on cheka_smeta(id_cheka_smeta);
+    create index if not exists idx_cheka_smeta_nomer on cheka_smeta(nomer_cheka);
+
+    create table if not exists postavka (
+        id_postavka int not null constraint PK_postavka primary key,
+        postavka varchar(20) not null,
+        nomer_cheka varchar(20) not null,
+        itogo_summa decimal(10,2) not null,
+        vnes_summa decimal(10,2) not null,
+        data_vremya timestamp not null,
+        id_sotrudnika int not null constraint FK_postavka_sotrudnik references sotrudnika(id_sotrudnika),
+        id_smeta int not null constraint FK_postavka_smeta references smeta(id_smeta)
+    );
+    create index if not exists idx_postavka_id on postavka(id_postavka);
+    create index if not exists idx_postavka_nomer_cheka on postavka(nomer_cheka);
+
+    create table if not exists Instrument (
+        id_instrument int not null constraint PK_instrument primary key,
+        artikul varchar(12) not null,
+        vid_instrumenta varchar(50) not null,
+        strana_proizvoditel varchar(50),
+        marka_model varchar(100),
+        diapazon_chastot varchar(100),
+        material text,
+        kolichestvo integer not null,
+        cena decimal(10,2) not null,
+        id_position_smeta int constraint FK_instrument_position references position_smeta(id_position_smeta),
+        id_zakaza int constraint FK_instrument_zakaz references zakaza(id_zakaza)
+    );
+    create index if not exists idx_instrument_id on Instrument(id_instrument);
+    create index if not exists idx_instrument_artikul on Instrument(artikul);
+    create index if not exists idx_instrument_vid on Instrument(vid_instrumenta);
+
+    grant select, insert, update on pokupatelya to rl_manager_zakupok;
+    grant select, insert, update on postavshika to rl_manager_zakupok;
+    grant select, insert, update on zakaza to rl_manager_zakupok;
+    grant select, insert, update on smeta to rl_manager_zakupok;
+    grant select, insert, update on position_smeta to rl_manager_zakupok;
+    grant select, insert on cheka_smeta to rl_manager_zakupok;
+    grant select, insert, update on postavka to rl_manager_zakupok;
+    grant select, insert, update on Instrument to rl_manager_zakupok;
+
+    grant select on pokupatelya to rl_kassir;
+    grant select, insert on zakaza to rl_kassir;
+    grant select, insert on chek_zakaza to rl_kassir;
+ 
+    grant select on zakaza to rl_skladskoy;
+    grant select on position_smeta to rl_skladskoy;
+    grant select, insert on postavka to rl_skladskoy;
+    grant select, insert, update on Instrument to rl_skladskoy;
+
+    grant all privileges on pokupatelya to rl_administrator;
+    grant all privileges on sotrudnika to rl_administrator;
+    grant all privileges on postavshika to rl_administrator;
+    grant all privileges on zakaza to rl_administrator;
+    grant all privileges on smeta to rl_administrator;
+    grant all privileges on position_smeta to rl_administrator;
+    grant all privileges on chek_zakaza to rl_administrator;
+    grant all privileges on cheka_smeta to rl_administrator;
+    grant all privileges on postavka to rl_administrator;
+    grant all privileges on Instrument to rl_administrator;
+    
+end;
+$$;
+
+
+create or replace procedure Structure_Re_Create()
+language plpgsql
+as $$
+begin
+    revoke all privileges on pokupatelya from rl_manager_zakupok;
+    revoke all privileges on postavshika from rl_manager_zakupok;
+    revoke all privileges on zakaza from rl_manager_zakupok;
+    revoke all privileges on smeta from rl_manager_zakupok;
+    revoke all privileges on position_smeta from rl_manager_zakupok;
+    revoke all privileges on cheka_smeta from rl_manager_zakupok;
+    revoke all privileges on postavka from rl_manager_zakupok;
+    revoke all privileges on Instrument from rl_manager_zakupok;
+    
+    revoke all privileges on pokupatelya from rl_kassir;
+    revoke all privileges on zakaza from rl_kassir;
+    revoke all privileges on chek_zakaza from rl_kassir;
+    
+    revoke all privileges on zakaza from rl_skladskoy;
+    revoke all privileges on position_smeta from rl_skladskoy;
+    revoke all privileges on postavka from rl_skladskoy;
+    revoke all privileges on Instrument from rl_skladskoy;
+    
+    revoke all privileges on pokupatelya from rl_administrator;
+    revoke all privileges on sotrudnika from rl_administrator;
+    revoke all privileges on postavshika from rl_administrator;
+    revoke all privileges on zakaza from rl_administrator;
+    revoke all privileges on smeta from rl_administrator;
+    revoke all privileges on position_smeta from rl_administrator;
+    revoke all privileges on chek_zakaza from rl_administrator;
+    revoke all privileges on cheka_smeta from rl_administrator;
+    revoke all privileges on postavka from rl_administrator;
+    revoke all privileges on Instrument from rl_administrator;
+
+    drop index if exists idx_pokupatelya_id;
+    drop index if exists idx_pokupatelya_login;
+    drop index if exists idx_pokupatelya_fio;
+    drop index if exists idx_sotrudnika_id;
+    drop index if exists idx_sotrudnika_fio;
+    drop index if exists idx_postavshika_id;
+    drop index if exists idx_postavshika_nomer;
+    drop index if exists idx_zakaza_id;
+    drop index if exists idx_zakaza_nomer;
+    drop index if exists idx_smeta_id;
+    drop index if exists idx_smeta_nomer;
+    drop index if exists idx_position_smeta_id;
+    drop index if exists idx_chek_zakaza_id;
+    drop index if exists idx_chek_zakaza_nomer;
+    drop index if exists idx_cheka_smeta_id;
+    drop index if exists idx_cheka_smeta_nomer;
+    drop index if exists idx_postavka_id;
+    drop index if exists idx_postavka_nomer_cheka;
+    drop index if exists idx_instrument_id;
+    drop index if exists idx_instrument_artikul;
+    drop index if exists idx_instrument_vid;
+
+    drop table if exists Instrument cascade;
+    drop table if exists postavka cascade;
+    drop table if exists cheka_smeta cascade;
+    drop table if exists chek_zakaza cascade;
+    drop table if exists position_smeta cascade;
+    drop table if exists smeta cascade;
+    drop table if exists zakaza cascade;
+    drop table if exists postavshika cascade;
+    drop table if exists sotrudnika cascade;
+    drop table if exists pokupatelya cascade;
+
+    call Structure_Create();
+    
+end;
+$$;
+
+
+select 
+    information_schema.tables.table_name as "Таблицы",
+    string_agg(distinct information_schema.columns.column_name, ', ') as "Столбцы",
+    string_agg(distinct pg_indexes.indexname, ', ') as "Индексы"
+from information_schema.tables
+inner join information_schema.columns 
+    on information_schema.columns.table_name = information_schema.tables.table_name
+left join pg_indexes 
+    on information_schema.tables.table_name = pg_indexes.tablename
+where 
+    information_schema.tables.table_schema = 'public' 
+    and table_type = 'BASE TABLE'
+group by information_schema.tables.table_name
+
+union all
+
+select 
+    (select count(*)::text from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE'),
+    (select count(information_schema.columns.column_name)::text 
+     from information_schema.tables 
+     inner join information_schema.columns on information_schema.columns.table_name = information_schema.tables.table_name
+     where information_schema.tables.table_schema = 'public'),
+    (select count(pg_indexes.indexname)::text 
+     from information_schema.tables 
+     inner join pg_indexes on information_schema.tables.table_name = pg_indexes.tablename
+     where information_schema.tables.table_schema = 'public');
+
